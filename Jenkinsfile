@@ -5,7 +5,7 @@ pipeline {
 
         stage('Clone Code') {
             steps {
-                git 'https://github.com/YOUR_USERNAME/chat-app.git'
+                git 'https://github.com/Rishabhdew/chat-app.git'
             }
         }
 
