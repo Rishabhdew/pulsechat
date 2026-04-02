@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PulseChat ⚡</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #chat-container {
+      width: 400px;
+      height: 550px;
+      background: white;
+      border-radius: 15px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    #header {
+      background: #4a47a3;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    #messages {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      background: #f5f5f5;
+    }
+
+    .msg {
+      max-width: 70%;
+      padding: 10px;
+      margin: 5px;
+      border-radius: 10px;
+      display: inline-block;
+      clear: both;
+      word-wrap: break-word;
+    }
+
+    .user {
+      background: #667eea;
+      color: white;
+      float: right;
+    }
+
+    .other {
+      background: #ddd;
+      float: left;
+    }
+
+    #input-box {
+      display: flex;
+      padding: 10px;
+      border-top: 1px solid #ccc;
+    }
+
+    #msg {
+      flex: 1;
+      padding: 10px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+      outline: none;
+    }
+
+    button {
+      margin-left: 10px;
+      padding: 10px 15px;
+      border: none;
+      background: #4a47a3;
+      color: white;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #3734a3;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="chat-container">
+
+  <div id="header">
+    ⚡ PulseChat
+  </div>
+
+  <div id="messages"></div>
+
+  <div id="input-box">
+    <input id="msg" placeholder="Type a message..." />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+  const socket = io();
+
+  // Unique ID for each user
+  const userId = Math.random().toString(36).substring(7);
+
+  function sendMessage() {
+    const input = document.getElementById("msg");
+    const msg = input.value;
+
+    if (msg.trim() === "") return;
+
+    socket.emit("message", {
+      text: msg,
+      sender: userId
+    });
+
+    input.value = "";
+  }
+
+  socket.on("message", (data) => {
+    if (data.sender === userId) {
+      addMessage(data.text, "user");
+    } else {
+      addMessage(data.text, "other");
+    }
+  });
+
+  function addMessage(msg, type) {
+    const div = document.createElement("div");
+    div.classList.add("msg", type);
+    div.innerText = msg;
+
+    document.getElementById("messages").appendChild(div);
+
+    // Auto-scroll
+    const container = document.getElementById("messages");
+    container.scrollTop = container.scrollHeight;
+  }
+</script>
+
+</body>
+</html>
