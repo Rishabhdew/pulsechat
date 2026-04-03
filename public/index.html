@@ -1,155 +1,413 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>PulseChat ⚡</title>
+  <title>PulseChat 🚀</title>
+  <script src="/socket.io/socket.io.js"></script>
 
   <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+ * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", sans-serif;
+}
 
-    #chat-container {
-      width: 400px;
-      height: 550px;
-      background: white;
-      border-radius: 15px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    }
+/* 🔥 BACKGROUND IMAGE + OVERLAY */
+body {
+  height: 100vh;
 
-    #header {
-      background: #4a47a3;
-      color: white;
-      padding: 15px;
-      text-align: center;
-      font-size: 18px;
-      font-weight: bold;
-    }
+  background:
+    linear-gradient(rgba(10, 15, 30, 0.75), rgba(10, 15, 30, 0.85)),
+    url("/bg.png") no-repeat center center;
 
-    #messages {
-      flex: 1;
-      padding: 10px;
-      overflow-y: auto;
-      background: #f5f5f5;
-    }
+  background-size: cover;
+  overflow: hidden;
+}
 
-    .msg {
-      max-width: 70%;
-      padding: 10px;
-      margin: 5px;
-      border-radius: 10px;
-      display: inline-block;
-      clear: both;
-      word-wrap: break-word;
-    }
+/* ================= LOGIN PAGE ================= */
+#auth {
+  display: flex;
+  height: 100vh;
+}
 
-    .user {
-      background: #667eea;
-      color: white;
-      float: right;
-    }
+.left {
+  flex: 1;
+  position: relative;
+}
 
-    .other {
-      background: #ddd;
-      float: left;
-    }
+.overlay {
+  position: absolute;
+  bottom: 50px;
+  left: 50px;
+  color: white;
+}
 
-    #input-box {
-      display: flex;
-      padding: 10px;
-      border-top: 1px solid #ccc;
-    }
+.overlay h1 {
+  font-size: 42px;
+}
 
-    #msg {
-      flex: 1;
-      padding: 10px;
-      border-radius: 20px;
-      border: 1px solid #ccc;
-      outline: none;
-    }
+.overlay p {
+  margin-top: 10px;
+  opacity: 0.8;
+}
 
-    button {
-      margin-left: 10px;
-      padding: 10px 15px;
-      border: none;
-      background: #4a47a3;
-      color: white;
-      border-radius: 20px;
-      cursor: pointer;
-    }
+/* RIGHT SIDE LOGIN FORM */
+.right {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 
-    button:hover {
-      background: #3734a3;
-    }
+  /* 🔥 glass effect */
+  backdrop-filter: blur(15px);
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.form {
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.form h2 {
+  text-align: center;
+  color: white;
+}
+
+input {
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+  background: #1e293b;
+  color: white;
+}
+
+input::placeholder {
+  color: #94a3b8;
+}
+
+button {
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+/* ================= CHAT APP ================= */
+#app {
+  display: flex;
+  height: 100vh;
+  color: white;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 260px;
+  padding: 20px;
+
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(12px);
+  border-right: 1px solid rgba(255,255,255,0.05);
+}
+
+.sidebar h2 {
+  margin-bottom: 20px;
+}
+
+.user {
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  cursor: pointer;
+
+  background: rgba(255,255,255,0.05);
+  transition: 0.2s;
+}
+
+.user:hover {
+  background: rgba(255,255,255,0.12);
+}
+
+/* CHAT AREA */
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+
+  /* 🔥 glass effect */
+  backdrop-filter: blur(15px);
+}
+
+/* HEADER */
+.header {
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  background: rgba(15, 23, 42, 0.7);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.header h3 {
+  font-weight: 500;
+}
+
+/* LOGOUT BUTTON */
+.logout {
+  background: #ef4444;
+  padding: 8px 15px;
+  border-radius: 8px;
+}
+
+.logout:hover {
+  background: #dc2626;
+}
+
+/* MESSAGES AREA */
+.messages {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* MESSAGE BUBBLE BASE */
+.msg {
+  padding: 12px 16px;
+  border-radius: 18px;
+  max-width: 60%;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* YOUR MESSAGE */
+.me {
+  align-self: flex-end;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+}
+
+/* OTHER USER MESSAGE */
+.other {
+  align-self: flex-start;
+  background: rgba(255,255,255,0.1);
+}
+
+/* INPUT AREA */
+.input {
+  display: flex;
+  gap: 10px;
+  padding: 15px;
+
+  background: rgba(15, 23, 42, 0.7);
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.input input {
+  flex: 1;
+}
+
+.input button {
+  width: 100px;
+}
+
+/* SCROLLBAR CLEAN */
+.messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messages::-webkit-scrollbar-thumb {
+  background: #4f46e5;
+  border-radius: 10px;
+}
   </style>
 </head>
 
 <body>
 
-<div id="chat-container">
-
-  <div id="header">
-    ⚡ PulseChat
+<!-- ================= LOGIN ================= -->
+<div id="auth">
+  <div class="left">
+    <div class="overlay">
+      <h1>PulseChat 🚀</h1>
+      <p>Connect. Chat. Build Memories.</p>
+    </div>
   </div>
 
-  <div id="messages"></div>
+  <div class="right">
+    <div class="form">
+      <h2>Create / Login</h2>
 
-  <div id="input-box">
-    <input id="msg" placeholder="Type a message..." />
-    <button onclick="sendMessage()">Send</button>
+      <input id="username" placeholder="Username">
+      <input id="password" type="password" placeholder="Password">
+
+      <button onclick="login()">Login</button>
+      <button onclick="signup()">Signup</button>
+    </div>
   </div>
-
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
+<!-- ================= CHAT ================= -->
+<div id="app">
+  <div class="sidebar">
+    <h2>Users</h2>
+    <div id="users"></div>
+  </div>
+
+  <div class="chat-area">
+    <div class="header">
+      <h3 id="chatWith">Select a user</h3>
+      <button class="logout" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="input">
+      <input id="msgInput" placeholder="Type message...">
+      <button onclick="send()">Send</button>
+    </div>
+  </div>
+</div>
 
 <script>
-  const socket = io();
+const socket = io();
+let username = "";
+let selectedUser = "";
 
-  // Unique ID for each user
-  const userId = Math.random().toString(36).substring(7);
+/* ================= AUTH ================= */
+async function signup() {
+  const u = usernameInput();
+  const p = passwordInput();
 
-  function sendMessage() {
-    const input = document.getElementById("msg");
-    const msg = input.value;
-
-    if (msg.trim() === "") return;
-
-    socket.emit("message", {
-      text: msg,
-      sender: userId
-    });
-
-    input.value = "";
-  }
-
-  socket.on("message", (data) => {
-    if (data.sender === userId) {
-      addMessage(data.text, "user");
-    } else {
-      addMessage(data.text, "other");
-    }
+  const res = await fetch("/api/auth/signup", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({username:u,password:p})
   });
 
-  function addMessage(msg, type) {
-    const div = document.createElement("div");
-    div.classList.add("msg", type);
-    div.innerText = msg;
+  const data = await res.json();
+  alert(data.message || data.error);
+}
 
-    document.getElementById("messages").appendChild(div);
+async function login() {
+  const u = usernameInput();
+  const p = passwordInput();
 
-    // Auto-scroll
-    const container = document.getElementById("messages");
-    container.scrollTop = container.scrollHeight;
+  const res = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({username:u,password:p})
+  });
+
+  const data = await res.json();
+
+  if (data.error) {
+    alert(data.error);
+    return;
   }
+
+  localStorage.setItem("token", data.token);
+
+  username = u;
+
+  document.getElementById("auth").style.display = "none";
+  document.getElementById("app").style.display = "flex";
+
+  socket.emit("join", username);
+}
+
+function logout() {
+  localStorage.removeItem("token");
+  location.reload();
+}
+
+function usernameInput() {
+  return document.getElementById("username").value;
+}
+function passwordInput() {
+  return document.getElementById("password").value;
+}
+
+/* ================= USERS ================= */
+socket.on("users", (list) => {
+  const div = document.getElementById("users");
+  div.innerHTML = "";
+
+  list.forEach(u => {
+    if (u !== username) {
+      const el = document.createElement("div");
+      el.className = "user";
+      el.innerText = u;
+
+      el.onclick = async () => {
+        selectedUser = u;
+        document.getElementById("chatWith").innerText = "Chat with " + u;
+
+        const res = await fetch(`/api/messages/${username}/${u}`);
+        const msgs = await res.json();
+
+        renderMessages(msgs);
+      };
+
+      div.appendChild(el);
+    }
+  });
+});
+
+/* ================= CHAT ================= */
+function send() {
+  const text = document.getElementById("msgInput").value;
+
+  if (!text || !selectedUser){
+alert("Select a user first")
+ return;
+}
+  socket.emit("private_message", {
+    sender: username,
+    receiver: selectedUser,
+    text
+  });
+
+  document.getElementById("msgInput").value = "";
+}
+
+socket.on("private_message", (msg) => {
+  if (
+    msg.sender === selectedUser ||
+    msg.receiver === selectedUser
+  ) {
+    addMessage(msg);
+  }
+});
+
+function renderMessages(list) {
+  const box = document.getElementById("messages");
+  box.innerHTML = "";
+
+  list.forEach(addMessage);
+}
+
+function addMessage(msg) {
+  const box = document.getElementById("messages");
+
+  const div = document.createElement("div");
+  div.className = "msg " + (msg.sender === username ? "me" : "other");
+  div.innerText = msg.sender + ": " + msg.text;
+
+  box.appendChild(div);
+}
 </script>
 
 </body>
