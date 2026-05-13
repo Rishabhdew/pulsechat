@@ -10,32 +10,32 @@ const router = express.Router();
 =========================== */
 router.post("/signup", async (req, res) => {
   try {
+    console.log("Signup request:", req.body);  // 👈 ADD THIS
+
     const { username, password } = req.body;
 
-    // check if user exists
     const existing = await User.findOne({ username });
 
     if (existing) {
       return res.json({ error: "User already exists" });
     }
 
-    // hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // save user
-    await User.create({
+    const user = await User.create({
       username,
       password: hashedPassword
     });
+
+    console.log("User saved:", user);  // 👈 ADD THIS
 
     res.json({ message: "Signup success" });
 
   } catch (err) {
     console.error(err);
-    res.json({ error: "Signup failed" });
+    res.status(500).json({ error: "Signup failed" });
   }
 });
-
 
 /* ===========================
    LOGIN

@@ -4,7 +4,6 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
 const { Server } = require("socket.io");
-const bcrypt = require("bcrypt");   // ✅ IMPORTANT
 
 const app = express();
 const server = http.createServer(app);
@@ -16,11 +15,15 @@ app.use(express.json());
 app.use(express.static("public"));
 
 /* ================= DB CONNECT ================= */
-mongoose.connect("mongodb://127.0.0.1:27017/chat-app", {
-  serverSelectionTimeoutMS: 5000
+// db.js (or inside server.js before routes)
+const mongoose = require("mongoose");
+
+mongoose.connect("mongodb://127.0.0.1:27017/chatapp", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 })
 .then(() => console.log("MongoDB connected"))
-.catch(err => console.log("Mongo error:", err));
+.catch(err => console.error("MongoDB error:", err));
 /* ================= MODELS ================= */
 const User = require("./models/User");
 const Message = require("./models/Message");
@@ -49,18 +52,21 @@ io.on("connection", (socket) => {
     console.log("Message:", data);
 
     try {
+      // Save to DB
       await Message.create({
         sender,
         receiver,
         text
       });
 
+      // Send to receiver
       const receiverSocket = users[receiver];
 
       if (receiverSocket) {
         io.to(receiverSocket).emit("private_message", data);
       }
 
+      // Send back to sender
       socket.emit("private_message", data);
 
     } catch (err) {
@@ -83,16 +89,10 @@ io.on("connection", (socket) => {
 
 /* ================= AUTH ROUTES ================= */
 
-// ✅ SIGNUP (FIXED)
+// SIGNUP
 app.post("/api/auth/signup", async (req, res) => {
   try {
-    console.log("Signup request:", req.body);
-
     const { username, password } = req.body;
-
-    if (!username || !password) {
-      return res.json({ error: "Username and password required" });
-    }
 
     const existing = await User.findOne({ username });
 
@@ -100,35 +100,19 @@ app.post("/api/auth/signup", async (req, res) => {
       return res.json({ error: "User already exists" });
     }
 
-    // 🔥 HASH PASSWORD
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    await User.create({
-      username,
-      password: hashedPassword
-    });
-
-    console.log("User created");
+    await User.create({ username, password });
 
     res.json({ message: "Signup success" });
 
   } catch (err) {
-    console.log("Signup error:", err);
     res.json({ error: "Signup failed" });
   }
 });
 
-
-// ✅ LOGIN (FIXED)
+// LOGIN
 app.post("/api/auth/login", async (req, res) => {
   try {
-    console.log("Login request:", req.body);
-
     const { username, password } = req.body;
-
-    if (!username || !password) {
-      return res.json({ error: "Username and password required" });
-    }
 
     const user = await User.findOne({ username });
 
@@ -136,21 +120,16 @@ app.post("/api/auth/login", async (req, res) => {
       return res.json({ error: "User not found. Signup first." });
     }
 
-    // 🔥 COMPARE HASH
-    const isMatch = await bcrypt.compare(password, user.password);
-
-    if (!isMatch) {
+    if (user.password !== password) {
       return res.json({ error: "Wrong password" });
     }
 
     res.json({ message: "Login success" });
 
   } catch (err) {
-    console.log("Login error:", err);
     res.json({ error: "Login failed" });
   }
 });
-
 
 /* ================= CHAT HISTORY ================= */
 
@@ -168,7 +147,6 @@ app.get("/api/messages/:user1/:user2", async (req, res) => {
     res.json(messages);
 
   } catch (err) {
-    console.log("Fetch messages error:", err);
     res.json([]);
   }
 });

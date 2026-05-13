@@ -2,29 +2,26 @@
 <html>
 <head>
   <title>PulseChat 🚀</title>
-  <script src="/socket.io/socket.io.js"></script>
 
   <style>
- * {
+* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
   font-family: "Segoe UI", sans-serif;
 }
 
-/* 🔥 BACKGROUND IMAGE + OVERLAY */
+/* BACKGROUND */
 body {
   height: 100vh;
-
   background:
-    linear-gradient(rgba(10, 15, 30, 0.75), rgba(10, 15, 30, 0.85)),
+    linear-gradient(rgba(10,15,30,0.75), rgba(10,15,30,0.85)),
     url("/bg.png") no-repeat center center;
-
   background-size: cover;
   overflow: hidden;
 }
 
-/* ================= LOGIN PAGE ================= */
+/* LOGIN */
 #auth {
   display: flex;
   height: 100vh;
@@ -51,16 +48,13 @@ body {
   opacity: 0.8;
 }
 
-/* RIGHT SIDE LOGIN FORM */
 .right {
   flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
-
-  /* 🔥 glass effect */
   backdrop-filter: blur(15px);
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15,23,42,0.6);
 }
 
 .form {
@@ -92,49 +86,40 @@ button {
   padding: 12px;
   border-radius: 10px;
   border: none;
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: linear-gradient(135deg,#6366f1,#4f46e5);
   color: white;
   cursor: pointer;
-  transition: 0.2s;
 }
 
 button:hover {
   opacity: 0.9;
 }
 
-/* ================= CHAT APP ================= */
+/* CHAT */
 #app {
-  display: flex;
+  display: none;
   height: 100vh;
   color: white;
 }
 
 /* SIDEBAR */
 .sidebar {
-  width: 260px;
+  width: 250px;
   padding: 20px;
-
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(15,23,42,0.8);
   backdrop-filter: blur(12px);
-  border-right: 1px solid rgba(255,255,255,0.05);
-}
-
-.sidebar h2 {
-  margin-bottom: 20px;
 }
 
 .user {
-  padding: 12px;
-  border-radius: 12px;
-  margin-bottom: 10px;
-  cursor: pointer;
-
+  padding: 10px;
+  margin: 5px 0;
   background: rgba(255,255,255,0.05);
-  transition: 0.2s;
+  border-radius: 10px;
+  cursor: pointer;
 }
 
 .user:hover {
-  background: rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.1);
 }
 
 /* CHAT AREA */
@@ -142,102 +127,62 @@ button:hover {
   flex: 1;
   display: flex;
   flex-direction: column;
-
-  /* 🔥 glass effect */
-  backdrop-filter: blur(15px);
 }
 
 /* HEADER */
 .header {
-  padding: 15px 20px;
+  padding: 15px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-
-  background: rgba(15, 23, 42, 0.7);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: rgba(15,23,42,0.7);
 }
 
-.header h3 {
-  font-weight: 500;
-}
-
-/* LOGOUT BUTTON */
 .logout {
-  background: #ef4444;
-  padding: 8px 15px;
-  border-radius: 8px;
+  background: red;
 }
 
-.logout:hover {
-  background: #dc2626;
-}
-
-/* MESSAGES AREA */
+/* MESSAGES */
 .messages {
   flex: 1;
   padding: 20px;
   overflow-y: auto;
-
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-/* MESSAGE BUBBLE BASE */
 .msg {
-  padding: 12px 16px;
-  border-radius: 18px;
+  padding: 10px;
+  border-radius: 12px;
   max-width: 60%;
-  font-size: 14px;
-  line-height: 1.4;
 }
 
-/* YOUR MESSAGE */
 .me {
   align-self: flex-end;
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: #6366f1;
 }
 
-/* OTHER USER MESSAGE */
 .other {
   align-self: flex-start;
   background: rgba(255,255,255,0.1);
 }
 
-/* INPUT AREA */
+/* INPUT */
 .input {
   display: flex;
   gap: 10px;
-  padding: 15px;
-
-  background: rgba(15, 23, 42, 0.7);
-  border-top: 1px solid rgba(255,255,255,0.05);
+  padding: 10px;
 }
 
 .input input {
   flex: 1;
-}
-
-.input button {
-  width: 100px;
-}
-
-/* SCROLLBAR CLEAN */
-.messages::-webkit-scrollbar {
-  width: 6px;
-}
-
-.messages::-webkit-scrollbar-thumb {
-  background: #4f46e5;
-  border-radius: 10px;
 }
   </style>
 </head>
 
 <body>
 
-<!-- ================= LOGIN ================= -->
+<!-- LOGIN -->
 <div id="auth">
   <div class="left">
     <div class="overlay">
@@ -249,7 +194,6 @@ button:hover {
   <div class="right">
     <div class="form">
       <h2>Create / Login</h2>
-
       <input id="username" placeholder="Username">
       <input id="password" type="password" placeholder="Password">
 
@@ -259,16 +203,16 @@ button:hover {
   </div>
 </div>
 
-<!-- ================= CHAT ================= -->
+<!-- CHAT -->
 <div id="app">
   <div class="sidebar">
-    <h2>Users</h2>
+    <h3>Users</h3>
     <div id="users"></div>
   </div>
 
   <div class="chat-area">
     <div class="header">
-      <h3 id="chatWith">Select a user</h3>
+      <h3 id="chatWith">Select user</h3>
       <button class="logout" onclick="logout()">Logout</button>
     </div>
 
@@ -276,51 +220,43 @@ button:hover {
 
     <div class="input">
       <input id="msgInput" placeholder="Type message...">
-      <button onclick="send()">Send</button>
+      <button onclick="sendMessage()">Send</button>
     </div>
   </div>
 </div>
 
+<!-- SCRIPTS -->
+<script src="/socket.io/socket.io.js"></script>
 <script>
+console.log("SCRIPT LOADED");
+
 const socket = io();
+
 let username = "";
 let selectedUser = "";
 
-/* ================= AUTH ================= */
-async function signup() {
-  const u = usernameInput();
-  const p = passwordInput();
-
-  const res = await fetch("/api/auth/signup", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({username:u,password:p})
-  });
-
-  const data = await res.json();
-  alert(data.message || data.error);
-}
-
+/* LOGIN */
 async function login() {
-  const u = usernameInput();
-  const p = passwordInput();
+  console.log("login clicked");
+
+  const usernameInput = document.getElementById("username").value;
+  const passwordInput = document.getElementById("password").value;
 
   const res = await fetch("/api/auth/login", {
     method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({username:u,password:p})
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: usernameInput, password: passwordInput })
   });
 
   const data = await res.json();
+  console.log(data);
 
   if (data.error) {
     alert(data.error);
     return;
   }
 
-  localStorage.setItem("token", data.token);
-
-  username = u;
+  username = usernameInput;
 
   document.getElementById("auth").style.display = "none";
   document.getElementById("app").style.display = "flex";
@@ -328,19 +264,36 @@ async function login() {
   socket.emit("join", username);
 }
 
+/* SIGNUP */
+async function signup() {
+  console.log("signup clicked");
+
+  const usernameInput = document.getElementById("username").value;
+  const passwordInput = document.getElementById("password").value;
+
+  const res = await fetch("/api/auth/signup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: usernameInput, password: passwordInput })
+  });
+
+  const data = await res.json();
+  console.log(data);
+
+  if (data.error) {
+    alert(data.error);
+    return;
+  }
+
+  alert("Signup successful! Now login.");
+}
+
+/* LOGOUT */
 function logout() {
-  localStorage.removeItem("token");
   location.reload();
 }
 
-function usernameInput() {
-  return document.getElementById("username").value;
-}
-function passwordInput() {
-  return document.getElementById("password").value;
-}
-
-/* ================= USERS ================= */
+/* USERS */
 socket.on("users", (list) => {
   const div = document.getElementById("users");
   div.innerHTML = "";
@@ -366,14 +319,15 @@ socket.on("users", (list) => {
   });
 });
 
-/* ================= CHAT ================= */
-function send() {
+/* SEND */
+function sendMessage() {
   const text = document.getElementById("msgInput").value;
 
-  if (!text || !selectedUser){
-alert("Select a user first")
- return;
-}
+  if (!text || !selectedUser) {
+    alert("Select a user first");
+    return;
+  }
+
   socket.emit("private_message", {
     sender: username,
     receiver: selectedUser,
@@ -383,28 +337,27 @@ alert("Select a user first")
   document.getElementById("msgInput").value = "";
 }
 
+/* RECEIVE */
 socket.on("private_message", (msg) => {
-  if (
-    msg.sender === selectedUser ||
-    msg.receiver === selectedUser
-  ) {
+  if (msg.sender === selectedUser || msg.receiver === selectedUser) {
     addMessage(msg);
   }
 });
 
+/* RENDER */
 function renderMessages(list) {
   const box = document.getElementById("messages");
   box.innerHTML = "";
-
   list.forEach(addMessage);
 }
 
+/* ADD */
 function addMessage(msg) {
   const box = document.getElementById("messages");
 
   const div = document.createElement("div");
   div.className = "msg " + (msg.sender === username ? "me" : "other");
-  div.innerText = msg.sender + ": " + msg.text;
+  div.innerText = msg.text;
 
   box.appendChild(div);
 }
