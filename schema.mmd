@@ -1,0 +1,17 @@
+erDiagram
+    USERS {
+        ObjectId _id
+        string username
+        string password
+    }
+
+    MESSAGES {
+        ObjectId _id
+        ObjectId sender
+        ObjectId receiver
+        string content
+        date createdAt
+    }
+
+    USERS ||--o{ MESSAGES : sends
+    USERS ||--o{ MESSAGES : receives

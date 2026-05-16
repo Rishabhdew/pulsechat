@@ -11,7 +11,6 @@
   font-family: "Segoe UI", sans-serif;
 }
 
-/* BACKGROUND */
 body {
   height: 100vh;
   background:
@@ -21,7 +20,6 @@ body {
   overflow: hidden;
 }
 
-/* LOGIN */
 #auth {
   display: flex;
   height: 100vh;
@@ -78,10 +76,6 @@ input {
   color: white;
 }
 
-input::placeholder {
-  color: #94a3b8;
-}
-
 button {
   padding: 12px;
   border-radius: 10px;
@@ -91,45 +85,37 @@ button {
   cursor: pointer;
 }
 
-button:hover {
-  opacity: 0.9;
-}
-
-/* CHAT */
 #app {
   display: none;
   height: 100vh;
   color: white;
 }
 
-/* SIDEBAR */
 .sidebar {
-  width: 250px;
+  width: 280px;
   padding: 20px;
   background: rgba(15,23,42,0.8);
-  backdrop-filter: blur(12px);
+  overflow-y: auto;
 }
 
-.user {
-  padding: 10px;
-  margin: 5px 0;
+.conversation {
+  padding: 12px;
+  margin: 8px 0;
   background: rgba(255,255,255,0.05);
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
 }
 
-.user:hover {
+.conversation:hover {
   background: rgba(255,255,255,0.1);
 }
 
-/* CHAT AREA */
 .chat-area {
   flex: 1;
   display: flex;
   flex-direction: column;
 }
 
-/* HEADER */
 .header {
   padding: 15px;
   display: flex;
@@ -141,7 +127,6 @@ button:hover {
   background: red;
 }
 
-/* MESSAGES */
 .messages {
   flex: 1;
   padding: 20px;
@@ -167,7 +152,6 @@ button:hover {
   background: rgba(255,255,255,0.1);
 }
 
-/* INPUT */
 .input {
   display: flex;
   gap: 10px;
@@ -182,186 +166,908 @@ button:hover {
 
 <body>
 
-<!-- LOGIN -->
+<!-- AUTH -->
 <div id="auth">
+
   <div class="left">
     <div class="overlay">
       <h1>PulseChat 🚀</h1>
-      <p>Connect. Chat. Build Memories.</p>
+      <p>Persistent Real-Time Messaging</p>
     </div>
   </div>
 
   <div class="right">
     <div class="form">
-      <h2>Create / Login</h2>
+
+      <h2>Login / Signup</h2>
+
       <input id="username" placeholder="Username">
       <input id="password" type="password" placeholder="Password">
 
       <button onclick="login()">Login</button>
       <button onclick="signup()">Signup</button>
+
     </div>
   </div>
+
 </div>
 
-<!-- CHAT -->
+<!-- CHAT APP -->
 <div id="app">
+
   <div class="sidebar">
-    <h3>Users</h3>
-    <div id="users"></div>
+
+    <h3>Chats</h3>
+
+    <div id="conversations"></div>
+    <hr style="margin:15px 0; opacity:0.3;">
+
+<h3>📩 Requests</h3>
+
+<div id="requests"></div>
+
   </div>
 
   <div class="chat-area">
+
     <div class="header">
-      <h3 id="chatWith">Select user</h3>
-      <button class="logout" onclick="logout()">Logout</button>
+
+      <h3 id="chatWith">Select Chat</h3>
+      <button onclick="summarizeChat()">
+  ✨ Summarize
+</button>
+      <button class="logout" onclick="logout()">
+        Logout
+      </button>
+
     </div>
 
     <div class="messages" id="messages"></div>
 
     <div class="input">
-      <input id="msgInput" placeholder="Type message...">
-      <button onclick="sendMessage()">Send</button>
+
+<button onclick="toggleEmojiPicker()">
+😀
+</button>
+
+<input id="msgInput" placeholder="Type message...">
+<input
+  type="file"
+  id="imageInput"
+  accept="image/*"
+  style="display:none"
+  onchange="uploadImage()"
+/>
+
+<button onclick="
+document.getElementById('imageInput').click()
+">
+📷
+</button>
+<button onclick="startRecording()">
+🎤
+</button>
+
+<button onclick="sendMessage()">
+  Send
+</button>
+
     </div>
-  </div>
+<div id="emojiPicker" style="
+display:none;
+padding:10px;
+background:rgba(0,0,0,0.3);
+border-radius:10px;
+margin:10px;
+">
+
+<span onclick="addEmoji('😀')">😀</span>
+<span onclick="addEmoji('😂')">😂</span>
+<span onclick="addEmoji('❤️')">❤️</span>
+<span onclick="addEmoji('🔥')">🔥</span>
+<span onclick="addEmoji('👍')">👍</span>
+<span onclick="addEmoji('😭')">😭</span>
+<span onclick="addEmoji('😎')">😎</span>
+<span onclick="addEmoji('🎉')">🎉</span>
+
 </div>
 
-<!-- SCRIPTS -->
+</div>
+
 <script src="/socket.io/socket.io.js"></script>
+
 <script>
-console.log("SCRIPT LOADED");
 
 const socket = io();
 
 let username = "";
-let selectedUser = "";
+let currentUser = null;
 
-/* LOGIN */
+let selectedConversation = null;
+
+let conversations = [];
+let unreadMessages = {};
+let onlineUsers = [];
+let mediaRecorder;
+
+let audioChunks = [];
+/* ================= LOGIN ================= */
+
 async function login() {
-  console.log("login clicked");
 
-  const usernameInput = document.getElementById("username").value;
-  const passwordInput = document.getElementById("password").value;
+  const usernameInput =
+    document.getElementById("username").value;
+
+  const passwordInput =
+    document.getElementById("password").value;
 
   const res = await fetch("/api/auth/login", {
+
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: usernameInput, password: passwordInput })
+
+    headers: {
+      "Content-Type": "application/json"
+    },
+
+    body: JSON.stringify({
+      username: usernameInput,
+      password: passwordInput
+    })
+
   });
 
   const data = await res.json();
-  console.log(data);
 
   if (data.error) {
+
     alert(data.error);
     return;
+
   }
 
   username = usernameInput;
 
+  currentUser = data.user;
+
   document.getElementById("auth").style.display = "none";
+
   document.getElementById("app").style.display = "flex";
 
   socket.emit("join", username);
+
+  loadConversations();
+  loadRequests();
+  setInterval(() => {
+
+  loadRequests();
+
+}, 3000);
+
 }
 
-/* SIGNUP */
-async function signup() {
-  console.log("signup clicked");
+/* ================= SIGNUP ================= */
 
-  const usernameInput = document.getElementById("username").value;
-  const passwordInput = document.getElementById("password").value;
+async function signup() {
+
+  const usernameInput =
+    document.getElementById("username").value;
+
+  const passwordInput =
+    document.getElementById("password").value;
 
   const res = await fetch("/api/auth/signup", {
+
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: usernameInput, password: passwordInput })
+
+    headers: {
+      "Content-Type": "application/json"
+    },
+
+    body: JSON.stringify({
+      username: usernameInput,
+      password: passwordInput
+    })
+
   });
 
   const data = await res.json();
-  console.log(data);
 
   if (data.error) {
+
     alert(data.error);
     return;
+
   }
 
-  alert("Signup successful! Now login.");
+  alert("Signup successful!");
+
 }
 
-/* LOGOUT */
+/* ================= LOGOUT ================= */
+
 function logout() {
+
   location.reload();
+
 }
 
-/* USERS */
-socket.on("users", (list) => {
-  const div = document.getElementById("users");
-  div.innerHTML = "";
+/* ================= LOAD CONVERSATIONS ================= */
 
-  list.forEach(u => {
-    if (u !== username) {
-      const el = document.createElement("div");
-      el.className = "user";
-      el.innerText = u;
+async function loadConversations() {
 
-      el.onclick = async () => {
-        selectedUser = u;
-        document.getElementById("chatWith").innerText = "Chat with " + u;
+  const res = await fetch(
+    `/api/conversations/${username}`
+  );
 
-        const res = await fetch(`/api/messages/${username}/${u}`);
-        const msgs = await res.json();
+  conversations = await res.json();
 
-        renderMessages(msgs);
-      };
+  renderConversations();
 
-      div.appendChild(el);
-    }
-  });
-});
-
-/* SEND */
-function sendMessage() {
-  const text = document.getElementById("msgInput").value;
-
-  if (!text || !selectedUser) {
-    alert("Select a user first");
-    return;
-  }
-
-  socket.emit("private_message", {
-    sender: username,
-    receiver: selectedUser,
-    text
-  });
-
-  document.getElementById("msgInput").value = "";
 }
 
-/* RECEIVE */
-socket.on("private_message", (msg) => {
-  if (msg.sender === selectedUser || msg.receiver === selectedUser) {
-    addMessage(msg);
-  }
-});
+/* ================= RENDER CONVERSATIONS ================= */
 
-/* RENDER */
-function renderMessages(list) {
-  const box = document.getElementById("messages");
+function renderConversations() {
+
+  const box =
+    document.getElementById("conversations");
+
   box.innerHTML = "";
-  list.forEach(addMessage);
+
+  conversations.forEach(conv => {
+
+    const div = document.createElement("div");
+
+    div.className = "conversation";
+
+    let title = "";
+
+    if (conv.type === "group") {
+
+      title = "👥 " + conv.groupName;
+
+    } else {
+
+      const otherUser =
+        conv.participants.find(
+          p => p.username !== username
+        );
+
+      title = otherUser?.username || "Unknown";
+
+    }
+
+const unread =
+  unreadMessages[conv._id] || 0;
+
+div.innerHTML = `
+  <strong>${title}</strong>
+  ${
+    unread > 0
+    ? `<span style="
+        background:red;
+        color:white;
+        border-radius:50%;
+        padding:4px 8px;
+        font-size:12px;
+        float:right;
+      ">
+        ${unread}
+      </span>`
+    : ""
+  }
+  <br>
+  <small>${conv.lastMessage || ""}</small>
+`;
+    div.onclick = () => {
+
+      openConversation(conv);
+
+    };
+
+    box.appendChild(div);
+
+  });
+
+}
+/* ================= LOAD REQUESTS ================= */
+
+async function loadRequests() {
+
+  const res = await fetch(
+    `/api/request/${currentUser._id}`
+  );
+
+  const requests =
+    await res.json();
+
+  renderRequests(requests);
+
 }
 
-/* ADD */
+
+
+/* ================= RENDER REQUESTS ================= */
+
+function renderRequests(requests) {
+
+  const box =
+    document.getElementById("requests");
+
+  box.innerHTML = "";
+
+  requests.forEach(req => {
+
+    const div =
+      document.createElement("div");
+
+    div.className =
+      "conversation";
+
+    div.innerHTML = `
+      <strong>
+        ${req.sender.username}
+      </strong>
+
+      <br><br>
+
+      <button
+        onclick="acceptRequest('${req._id}')"
+      >
+        Accept
+      </button>
+    `;
+
+    box.appendChild(div);
+
+  });
+
+}
+
+
+
+/* ================= ACCEPT REQUEST ================= */
+
+async function acceptRequest(
+  requestId
+) {
+
+  try {
+
+    await fetch(
+      "/api/request/accept",
+      {
+
+        method: "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+
+        body: JSON.stringify({
+          requestId
+        })
+
+      }
+    );
+
+    alert(
+      "Request accepted!"
+    );
+
+    loadRequests();
+
+    loadConversations();
+
+  } catch (err) {
+
+    console.log(err);
+
+  }
+
+}
+/* ================= RENDER ONLINE USERS ================= */
+
+function renderOnlineUsers() {
+
+  let usersBox =
+    document.getElementById("onlineUsers");
+
+  // CREATE ONLY ONCE
+  if (!usersBox) {
+
+    const sidebar =
+      document.querySelector(".sidebar");
+
+    const hr =
+      document.createElement("hr");
+
+    hr.style.margin = "15px 0";
+    hr.style.opacity = "0.3";
+
+    const title =
+      document.createElement("h3");
+
+    title.innerText = "Online Users";
+
+    usersBox =
+      document.createElement("div");
+
+    usersBox.id = "onlineUsers";
+
+    sidebar.appendChild(hr);
+    sidebar.appendChild(title);
+    sidebar.appendChild(usersBox);
+
+  }
+
+  // CLEAR OLD USERS
+  usersBox.innerHTML = "";
+
+  onlineUsers.forEach(user => {
+
+    if (user === username) return;
+
+    const div =
+      document.createElement("div");
+
+    div.className = "conversation";
+
+    div.innerHTML = `🟢 ${user}`;
+
+    div.onclick = async () => {
+
+      try {
+
+        // GET ALL USERS
+        const res1 = await fetch(
+          "/api/all-users"
+        );
+
+        const allUsers =
+          await res1.json();
+
+        const otherUser =
+          allUsers.find(
+            u => u.username === user
+          );
+
+        if (!otherUser) return;
+
+        // SEND CHAT REQUEST
+        await fetch(
+          "/api/request/send",
+          {
+
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body: JSON.stringify({
+
+              sender:
+                currentUser._id,
+
+              receiver:
+                otherUser._id
+
+            })
+
+          }
+        );
+
+        alert(
+          "Chat request sent!"
+        );
+
+      } catch (err) {
+
+        console.log(err);
+
+      }
+
+    };
+
+    usersBox.appendChild(div);
+
+  });
+
+}
+/* ================= OPEN CHAT ================= */
+
+async function openConversation(conv) {
+
+  selectedConversation = conv;
+  unreadMessages[conv._id] = 0;
+  socket.emit(
+    "join_conversation",
+    conv._id
+  );
+
+  let title = "";
+
+  if (conv.type === "group") {
+
+    title = conv.groupName;
+
+  } else {
+
+    const otherUser =
+      conv.participants.find(
+        p => p.username !== username
+      );
+
+    title = otherUser?.username || "Unknown";
+
+  }
+
+  document.getElementById("chatWith")
+    .innerText = title;
+
+  const res = await fetch(
+    `/api/messages/${conv._id}`
+  );
+
+  const msgs = await res.json();
+
+  renderMessages(msgs);
+
+}
+async function summarizeChat() {
+
+  if (!selectedConversation) {
+
+    alert("Open a chat first");
+
+    return;
+
+  }
+
+  const res = await fetch(
+    `/api/summary/${selectedConversation._id}`
+  );
+
+  const data =
+    await res.json();
+
+  alert(
+    "CHAT SUMMARY:\n\n" +
+    data.summary
+  );
+
+}
+/* ================= SEND MESSAGE ================= */
+
+function sendMessage() {
+
+  const input =
+    document.getElementById("msgInput");
+
+  const content = input.value;
+
+  if (!content || !selectedConversation) {
+
+    alert("Select a conversation");
+    return;
+
+  }
+
+  socket.emit("send_message", {
+
+    sender: currentUser._id,
+
+    conversationId:
+      selectedConversation._id,
+
+    content
+
+  });
+
+  input.value = "";
+
+}
+
+/* ================= RECEIVE MESSAGE ================= */
+
+socket.on("receive_message", (msg) => {
+
+  const currentConvId =
+    selectedConversation?._id;
+
+  if (
+    !currentConvId ||
+    msg.conversation !== currentConvId
+  ) {
+
+    unreadMessages[msg.conversation] =
+      (unreadMessages[msg.conversation] || 0) + 1;
+
+  }
+
+  if (
+    selectedConversation &&
+    msg.conversation === selectedConversation._id
+  ) {
+
+    addMessage(msg);
+
+  }
+
+  loadConversations();
+
+});
+/* ================= ONLINE USERS ================= */
+
+/* ================= ONLINE USERS ================= */
+
+socket.on("users", (usersList) => {
+
+  onlineUsers = usersList;
+
+  renderOnlineUsers();
+
+});
+
+
+socket.on(
+  "conversation_accepted",
+  () => {
+
+    loadConversations();
+
+    loadRequests();
+
+  }
+);
+/* ================= RENDER MESSAGES ================= */
+
+function renderMessages(list) {
+
+  const box =
+    document.getElementById("messages");
+
+  box.innerHTML = "";
+
+  list.forEach(addMessage);
+
+}
+
+/* ================= ADD MESSAGE ================= */
+
 function addMessage(msg) {
-  const box = document.getElementById("messages");
 
-  const div = document.createElement("div");
-  div.className = "msg " + (msg.sender === username ? "me" : "other");
-  div.innerText = msg.text;
+  const box =
+    document.getElementById("messages");
 
+  const div =
+    document.createElement("div");
+
+  const isMe =
+    msg.sender === currentUser._id ||
+    msg.sender?._id === currentUser._id;
+
+  div.className =
+    "msg " + (isMe ? "me" : "other");
+
+if (msg.messageType === "audio") {
+
+  div.innerHTML = `
+    <audio controls>
+      <source
+        src="${msg.mediaUrl}"
+        type="audio/webm">
+    </audio>
+  `;
+
+} else if (
+  msg.messageType === "image"
+) {
+
+  div.innerHTML = `
+    <img
+      src="${msg.mediaUrl}"
+      style="
+        max-width:200px;
+        border-radius:10px;
+      "
+    />
+  `;
+
+} else {
+
+  div.innerText =
+    msg.content;
+
+}
   box.appendChild(div);
+
+  box.scrollTop = box.scrollHeight;
+
+}
+function toggleEmojiPicker() {
+
+  const picker =
+    document.getElementById(
+      "emojiPicker"
+    );
+
+  if (picker.style.display === "none") {
+
+    picker.style.display = "block";
+
+  } else {
+
+    picker.style.display = "none";
+
+  }
+
+}
+
+function addEmoji(emoji) {
+
+  const input =
+    document.getElementById(
+      "msgInput"
+    );
+
+  input.value += emoji;
+
+}
+
+async function startRecording() {
+
+  try {
+
+    const stream =
+      await navigator.mediaDevices
+      .getUserMedia({
+        audio: true
+      });
+
+    mediaRecorder =
+      new MediaRecorder(stream);
+
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable =
+      event => {
+
+      audioChunks.push(
+        event.data
+      );
+
+    };
+
+    mediaRecorder.onstop =
+      async () => {
+
+      const audioBlob =
+        new Blob(
+          audioChunks,
+          {
+            type: "audio/webm"
+          }
+        );
+
+      const formData =
+        new FormData();
+
+      formData.append(
+        "audio",
+        audioBlob,
+        "voice.webm"
+      );
+
+      formData.append(
+        "sender",
+        currentUser._id
+      );
+
+      formData.append(
+        "conversationId",
+        selectedConversation._id
+      );
+
+      await fetch(
+        "/api/upload/audio",
+        {
+
+          method: "POST",
+
+          body: formData
+
+        }
+      );
+
+    };
+
+    mediaRecorder.start();
+
+    alert(
+      "Recording started..."
+    );
+
+    setTimeout(() => {
+
+      mediaRecorder.stop();
+
+      alert(
+        "Voice note sent!"
+      );
+
+    }, 5000);
+
+  } catch (err) {
+
+    console.log(err);
+
+    alert(
+      "Microphone access denied"
+    );
+
+  }
+
+}
+async function uploadImage() {
+
+  try {
+
+    const fileInput =
+      document.getElementById(
+        "imageInput"
+      );
+
+    const file =
+      fileInput.files[0];
+
+    if (!file) return;
+
+    const formData =
+      new FormData();
+
+    formData.append(
+      "image",
+      file
+    );
+
+    formData.append(
+      "sender",
+      currentUser._id
+    );
+
+    formData.append(
+      "conversationId",
+      selectedConversation._id
+    );
+
+    await fetch(
+      "/api/upload/image",
+      {
+
+        method: "POST",
+
+        body: formData
+
+      }
+    );
+
+    fileInput.value = "";
+
+  } catch (err) {
+
+    console.log(err);
+
+    alert(
+      "Image upload failed"
+    );
+
+  }
+
 }
 </script>
-
 </body>
 </html>

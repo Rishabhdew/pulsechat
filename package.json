@@ -15,8 +15,12 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.0",
     "express": "^5.2.1",
+    "graphviz-cli": "^2.0.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.3.3",
+    "mongoose-schema-jsonschema": "^4.0.1",
+    "multer": "^2.1.1",
+    "natural": "^8.1.1",
     "socket.io": "^4.8.3"
   }
 }
