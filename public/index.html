@@ -198,7 +198,20 @@ button {
   <div class="sidebar">
 
     <h3>Chats</h3>
-
+    <button onclick="createGroup()"
+style="
+width:100%;
+padding:10px;
+margin-bottom:10px;
+background:#6c5ce7;
+color:white;
+border:none;
+border-radius:10px;
+cursor:pointer;
+font-weight:bold;
+">
++ Create Group
+</button>
     <div id="conversations"></div>
     <hr style="margin:15px 0; opacity:0.3;">
 
@@ -1112,6 +1125,86 @@ async function uploadImage() {
     alert(
       "Image upload failed"
     );
+
+  }
+
+}
+async function createGroup() {
+
+  try {
+
+    const groupName =
+      prompt("Enter group name");
+
+    if (!groupName) return;
+
+    const usernames =
+      prompt(
+        "Enter usernames separated by comma"
+      );
+
+    if (!usernames) return;
+
+    const names =
+      usernames
+      .split(",")
+      .map(u => u.trim());
+
+    // GET USERS
+    const res =
+      await fetch("/api/all-users");
+
+    const allUsers =
+      await res.json();
+
+    const members =
+      allUsers
+      .filter(u =>
+        names.includes(u.username)
+      )
+      .map(u => u._id);
+
+    // CREATE GROUP
+    const response =
+      await fetch(
+        "/api/group/create",
+        {
+
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+
+            groupName,
+
+            creator:
+              currentUser._id,
+
+            members
+
+          })
+
+        }
+      );
+
+    const data =
+      await response.json();
+
+    console.log(data);
+
+    alert("Group created!");
+
+    loadConversations();
+
+  } catch (err) {
+
+    console.log(err);
+
+    alert("Group creation failed");
 
   }
 

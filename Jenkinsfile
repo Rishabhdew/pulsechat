@@ -1,32 +1,69 @@
 pipeline {
+
     agent any
+
+    environment {
+
+        IMAGE_NAME = "rishabhdew/pulsechat"
+
+    }
 
     stages {
 
         stage('Install Dependencies') {
+
             steps {
-                sh 'npm install'
+
+                sh '/opt/homebrew/bin/npm install'
+
             }
+
         }
 
         stage('Run Tests') {
+
             steps {
-                sh 'npm test'
+
+                sh '/opt/homebrew/bin/npm test'
+
             }
+
         }
 
         stage('Build Docker Image') {
+
             steps {
-                sh 'docker build -t pulsechat .'
+
+                sh '/usr/local/bin/docker build -t $IMAGE_NAME:latest .'
+
             }
+
+        }
+
+        stage('Push Docker Image') {
+
+            steps {
+
+                sh '/usr/local/bin/docker push $IMAGE_NAME:latest'
+
+            }
+
         }
 
         stage('Deploy to Kubernetes') {
+
             steps {
-                sh 'kubectl apply -f deployment.yaml'
-                sh 'kubectl apply -f service.yaml'
-                sh 'kubectl apply -f hpa.yaml'
+
+                sh '/usr/local/bin/kubectl apply -f deployment.yaml'
+
+                sh '/usr/local/bin/kubectl apply -f service.yaml'
+
+                sh '/usr/local/bin/kubectl apply -f hpa.yaml'
+
             }
+
         }
+
     }
+
 }
