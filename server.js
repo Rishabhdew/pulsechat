@@ -110,14 +110,15 @@ io.on("connection", (socket) => {
 
       console.log("Message:", data);
 
-      const message = await Message.create({
+     const message = await Message.create({
 
-        sender,
-        conversationId,
-        content
+  sender,
 
-      });
+  conversationId,
 
+  content
+
+});
       await Conversation.findByIdAndUpdate(
         conversationId,
         {
@@ -125,7 +126,7 @@ io.on("connection", (socket) => {
           updatedAt: new Date()
         }
       );
-
+      message.conversation = conversationId;
       io.to(conversationId).emit(
         "receive_message",
         message
@@ -422,122 +423,67 @@ app.get("/api/messages/:conversationId", async (req, res) => {
 });
 /* ================= CHAT SUMMARY ================= */
 
-app.get(
-  "/api/summary/:conversationId",
-  async (req, res) => {
-
-    try {
-
-      const messages =
-        await Message.find({
-          conversation:
-            req.params.conversationId
-        }).sort({
-          createdAt: 1
-        });
-
-      if (!messages.length) {
-
-        return res.json({
-          summary: "No messages yet"
-        });
-
-      }
-
-const text =
-messages
-.map(m => m.text || m.content || "")
-.join(". ");
-
-
-const sentences =
-text.split(".");
-.map(m => m.text || m.content || "")
-.join(". ");
-
-const sentences =
-text.split(".");const text =
-messages
-.map(m => m.text || m.content || "")
-.join(". ");
-
-const sentences =
-text.split(".");
-      const tfidf =
-        new natural.TfIdf();
-
-      sentences.forEach(s => {
-
-        tfidf.addDocument(s);
-
-      });
-
-      let scored =
-        sentences.map((s, i) => {
-
-          let score = 0;
-
-          tfidf.listTerms(i)
-            .forEach(term => {
-
-              score += term.tfidf;
-
-            });
-
-          return {
-            sentence: s,
-            score
-          };
-
-        });
-
-      scored.sort(
-        (a, b) =>
-          b.score - a.score
-      );
-
-      const summary =
-        scored
-          .slice(0, 5)
-          .map(s => s.sentence)
-          .join(". ");
-
-      res.json({ summary });
-
-    } catch (err) {
-
-      console.log(err);
-
-      res.json({
-        summary:
-          "Summary failed"
-      });
-
-    }
-
-  }
-);
-/* ================= ALL USERS ================= */
-
-app.get("/api/all-users", async (req, res) => {
-
+app.get("/api/summary/:conversationId", async (req, res) => {
   try {
 
-    const users = await User.find(
-      {},
-      "username"
-    );
+    const messages = await Message.find({
+      conversation: req.params.conversationId
+    }).sort({
+      createdAt: 1
+    });
 
-    res.json(users);
+    if (!messages.length) {
+      return res.json({
+        summary: "No messages yet"
+      });
+    }
+
+    const text = messages
+      .map(m => m.text || m.content || "")
+      .join(". ");
+
+    const sentences = text.split(".");
+
+    const tfidf = new natural.TfIdf();
+
+    sentences.forEach(s => {
+      tfidf.addDocument(s);
+    });
+
+    let scored = sentences.map((s, i) => {
+
+      let score = 0;
+
+      tfidf.listTerms(i).forEach(term => {
+        score += term.tfidf;
+      });
+
+      return {
+        sentence: s,
+        score
+      };
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+
+    const summary = scored
+      .slice(0, 3)
+      .map(s => s.sentence)
+      .join(". ");
+
+    res.json({
+      summary
+    });
 
   } catch (err) {
 
-    console.log("All users error:", err);
+    console.log(err);
 
-    res.json([]);
+    res.json({
+      summary: "Summary failed"
+    });
 
   }
-
 });
 /* ================= AUDIO UPLOAD ================= */
 
