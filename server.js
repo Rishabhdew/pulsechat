@@ -379,37 +379,73 @@ app.get("/api/conversations/:username", async (req, res) => {
 });
 
 /* ========= CREATE GROUP ========= */
-
 app.post("/api/group/create", async (req, res) => {
 
   try {
 
     const {
       groupName,
-      admin,
+      creator,
       members
     } = req.body;
 
-    const conversation = await Conversation.create({
+    // REMOVE DUPLICATES
+    const uniqueMembers =
+      [...new Set([
+        creator,
+        ...members
+      ])];
 
-      type: "group",
+    const conversation =
+      await Conversation.create({
 
-      groupName,
+        type: "group",
 
-      groupAdmin: admin,
+        groupName,
 
-      participants: [admin, ...members]
+        participants:
+          uniqueMembers
 
-    });
+      });
 
-    res.json(conversation);
+    const populatedConversation =
+      await Conversation.findById(
+        conversation._id
+      )
+      .populate(
+        "participants",
+        "username"
+      );
+
+    // EMIT TO ONLINE USERS
+    populatedConversation
+      .participants
+      .forEach(user => {
+
+        if (users[user.username]) {
+
+          io.to(
+            users[user.username]
+          ).emit(
+            "group_created",
+            populatedConversation
+          );
+
+        }
+
+      });
+
+    res.json(
+      populatedConversation
+    );
 
   } catch (err) {
 
-    console.log("Group creation error:", err);
+    console.log(err);
 
-    res.json({
-      error: "Group creation failed"
+    res.status(500).json({
+      error:
+        "Group creation failed"
     });
 
   }
@@ -522,26 +558,35 @@ app.post(
       } = req.body;
 
       const message =
-        await Message.create({
+  await Message.create({
 
-          sender,
+    sender,
 
-          conversationId,
+    conversationId,
 
-          messageType: "audio",
+    messageType: "audio",
 
-          mediaUrl:
-            "/uploads/" +
-            req.file.filename
+    mediaUrl:
+      "/uploads/" +
+      req.file.filename
 
-        });
+  });
 
-      io.to(conversationId)
-        .emit(
-          "receive_message",
-          message
-        );
+// POPULATE SENDER USERNAME
+const populatedMessage =
+  await Message.findById(
+    message._id
+  ).populate(
+    "sender",
+    "username"
+  );
 
+// EMIT TO ALL USERS
+io.to(conversationId)
+  .emit(
+    "receive_message",
+    populatedMessage
+  );
       res.json(message);
 
     } catch (err) {
@@ -578,26 +623,35 @@ app.post(
       } = req.body;
 
       const message =
-        await Message.create({
+  await Message.create({
 
-          sender,
+    sender,
 
-          conversationId,
+    conversationId,
 
-          messageType: "image",
+    messageType: "audio",
 
-          mediaUrl:
-            "/uploads/" +
-            req.file.filename
+    mediaUrl:
+      "/uploads/" +
+      req.file.filename
 
-        });
+  });
 
-      io.to(conversationId)
-        .emit(
-          "receive_message",
-          message
-        );
+// POPULATE SENDER USERNAME
+const populatedMessage =
+  await Message.findById(
+    message._id
+  ).populate(
+    "sender",
+    "username"
+  );
 
+// EMIT TO ALL USERS
+io.to(conversationId)
+  .emit(
+    "receive_message",
+    populatedMessage
+  );
       res.json(message);
 
     } catch (err) {

@@ -850,14 +850,19 @@ socket.on("receive_message", (msg) => {
   }
 
   if (
-    selectedConversation &&
-    msg.conversation === selectedConversation._id
-  ) {
+  selectedConversation &&
+  (
+    msg.conversation ===
+    selectedConversation._id ||
 
-    addMessage(msg);
+    msg.conversationId ===
+    selectedConversation._id
+  )
+) {
 
-  }
+  addMessage(msg);
 
+}
   loadConversations();
 
 });
@@ -881,6 +886,14 @@ socket.on(
     loadConversations();
 
     loadRequests();
+
+  }
+);
+socket.on(
+  "group_created",
+  () => {
+
+    loadConversations();
 
   }
 );
@@ -914,39 +927,93 @@ function addMessage(msg) {
   div.className =
     "msg " + (isMe ? "me" : "other");
 
-if (msg.messageType === "audio") {
+  // ===== SENDER NAME FOR GROUP =====
 
-  div.innerHTML = `
-    <audio controls>
-      <source
+  let senderText = "";
+
+  if (
+    selectedConversation &&
+    selectedConversation.type === "group"
+  ) {
+
+    if (isMe) {
+
+      senderText = "You";
+
+    } else {
+
+      senderText =
+        msg.sender?.username ||
+        msg.senderName ||
+        "User";
+
+    }
+
+    senderText += ": ";
+
+  }
+
+  // ===== AUDIO =====
+
+  if (msg.messageType === "audio") {
+
+    div.innerHTML = `
+      <div style="
+        font-size:12px;
+        margin-bottom:5px;
+        font-weight:bold;
+      ">
+        ${senderText}
+      </div>
+
+      <audio controls>
+        <source
+          src="${msg.mediaUrl}"
+          type="audio/webm">
+      </audio>
+    `;
+
+  }
+
+  // ===== IMAGE =====
+
+  else if (
+    msg.messageType === "image"
+  ) {
+
+    div.innerHTML = `
+      <div style="
+        font-size:12px;
+        margin-bottom:5px;
+        font-weight:bold;
+      ">
+        ${senderText}
+      </div>
+
+      <img
         src="${msg.mediaUrl}"
-        type="audio/webm">
-    </audio>
-  `;
+        style="
+          max-width:200px;
+          border-radius:10px;
+        "
+      />
+    `;
 
-} else if (
-  msg.messageType === "image"
-) {
+  }
 
-  div.innerHTML = `
-    <img
-      src="${msg.mediaUrl}"
-      style="
-        max-width:200px;
-        border-radius:10px;
-      "
-    />
-  `;
+  // ===== TEXT =====
 
-} else {
+  else {
 
-  div.innerText =
-    msg.content;
+    div.innerText =
+      senderText + msg.content;
 
-}
+  }
+
   box.appendChild(div);
 
-  box.scrollTop = box.scrollHeight;
+  box.scrollTop =
+    box.scrollHeight;
 
 }
 function toggleEmojiPicker() {
@@ -1158,11 +1225,17 @@ async function createGroup() {
       await res.json();
 
     const members =
-      allUsers
-      .filter(u =>
-        names.includes(u.username)
-      )
-      .map(u => u._id);
+  allUsers
+  .filter(u => {
+
+    return names.some(
+      name =>
+        name.toLowerCase() ===
+        u.username.toLowerCase()
+    );
+
+  })
+  .map(u => u._id);
 
     // CREATE GROUP
     const response =
