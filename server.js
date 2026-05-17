@@ -298,7 +298,7 @@ app.post("/api/auth/login", async (req, res) => {
 
 /* ================= CONVERSATIONS ================= */
 
-/* ========= CREATE PRIVATE CHAT ========= */
+/* ========= CREATE PRIVATE CHAT =========== */
 
 app.post("/api/conversation/private", async (req, res) => {
 
