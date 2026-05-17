@@ -15,7 +15,7 @@ const io = new Server(server, {
   }
 });
 
-/* ================= MIDDLEWARE ================= */
+/* ================= MIDDLEWARE =================== */
 
 app.use(cors());
 app.use(express.json());
