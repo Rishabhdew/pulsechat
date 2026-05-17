@@ -19,6 +19,26 @@ const io = new Server(server, {
 
 app.use(cors());
 app.use(express.json());
+
+
+app.get("/api/all-users", async (req, res) => {
+
+  try {
+
+    const users =
+      await User.find({}, "username");
+
+    res.json(users);
+
+  } catch (err) {
+
+    console.log(err);
+
+    res.status(500).json([]);
+
+  }
+
+});
 app.use(express.static("public"));
 app.use("/uploads",
   express.static("uploads")
@@ -610,7 +630,7 @@ app.post(
         receiver
       } = req.body;
 
-      // CHECK EXISTING
+      // CHECK EXISTING REQUEST
       const existing =
         await ChatRequest.findOne({
 
@@ -624,19 +644,19 @@ app.post(
       if (existing) {
 
         return res.json({
-
-          error:
-            "Request already sent"
-
+          error: "Request already sent"
         });
 
       }
 
+      // CREATE REQUEST
       const request =
         await ChatRequest.create({
 
           sender,
-          receiver
+          receiver,
+
+          status: "pending"
 
         });
 
@@ -647,14 +667,14 @@ app.post(
       console.log(err);
 
       res.json({
-        error:
-          "Request failed"
+        error: "Request failed"
       });
 
     }
 
   }
 );
+
 
 /* ================= GET REQUESTS ================= */
 
@@ -692,18 +712,18 @@ app.get(
   }
 );
 
+
 /* ================= ACCEPT REQUEST ================= */
 
 app.post(
-  "/api/request/accept",
+  "/api/request/accept/:id",
 
   async (req, res) => {
 
     try {
 
-      const {
-        requestId
-      } = req.body;
+      const requestId =
+        req.params.id;
 
       const request =
         await ChatRequest.findById(
@@ -712,81 +732,115 @@ app.post(
 
       if (!request) {
 
-        return res.json({
-          error:
-            "Request not found"
+        return res.status(404).json({
+          error: "Request not found"
         });
 
       }
 
+      // UPDATE STATUS
       request.status =
         "accepted";
 
       await request.save();
+
+      // CHECK IF CONVERSATION ALREADY EXISTS
+      let conversation =
+        await Conversation.findOne({
+
+          type: "private",
+
+          participants: {
+            $all: [
+              request.sender,
+              request.receiver
+            ]
+          }
+
+        });
+
+      // CREATE NEW CONVERSATION
+      if (!conversation) {
+
+        conversation =
+          await Conversation.create({
+
+            type: "private",
+
+            participants: [
+              request.sender,
+              request.receiver
+            ]
+
+          });
+
+      }
+
+      // POPULATE USERS
+      const populatedConversation =
+        await Conversation.findById(
+          conversation._id
+        )
+        .populate(
+          "participants",
+          "username"
+        );
+
+      // REALTIME UPDATE
       const senderUser =
-  await User.findById(request.sender);
+        await User.findById(
+          request.sender
+        );
 
-const receiverUser =
-  await User.findById(request.receiver);
+      const receiverUser =
+        await User.findById(
+          request.receiver
+        );
 
-if (users[senderUser.username]) {
+      if (
+        users[senderUser.username]
+      ) {
 
-  io.to(
-    users[senderUser.username]
-  ).emit(
-    "conversation_accepted"
-  );
+        io.to(
+          users[senderUser.username]
+        ).emit(
+          "conversation_accepted",
+          populatedConversation
+        );
 
-}
+      }
 
-if (users[receiverUser.username]) {
+      if (
+        users[receiverUser.username]
+      ) {
 
-  io.to(
-    users[receiverUser.username]
-  ).emit(
-    "conversation_accepted"
-  );
+        io.to(
+          users[receiverUser.username]
+        ).emit(
+          "conversation_accepted",
+          populatedConversation
+        );
 
-}
-      // CREATE CONVERSATION
-let conversation = await Conversation.findOne({
-  type: "private",
-  participants: {
-    $all: [request.sender, request.receiver]
-  }
-});
+      }
 
-if (!conversation) {
+      res.json({
+        success: true,
+        conversation:
+          populatedConversation
+      });
 
-  conversation = await Conversation.create({
-    type: "private",
-    participants: [
-      request.sender,
-      request.receiver
-    ]
-  });
-
-}
-
-const populatedConversation =
-  await Conversation.findById(conversation._id)
-  .populate("participants", "username");
-
-res.json(populatedConversation);
     } catch (err) {
 
       console.log(err);
 
-      res.json({
-        error:
-          "Accept failed"
+      res.status(500).json({
+        error: "Accept failed"
       });
 
     }
 
   }
 );
-
 /* ================= SERVER ================= */
 
 const PORT = 3000;
