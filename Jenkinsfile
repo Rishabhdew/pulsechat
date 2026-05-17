@@ -4,7 +4,7 @@ pipeline {
 
     environment {
 
-        IMAGE_NAME = "rishabhdew/pulsechat"
+       IMAGE_NAME = "rish9981/pulsechat"
 
     }
 

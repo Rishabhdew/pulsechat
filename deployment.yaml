@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: pulsechat
-          image: rish9981/pulsechat:latest
+          image: Rishabhdew/pulsechat:latest
           imagePullPolicy: IfNotPresent
 
           ports:
